@@ -3,7 +3,6 @@ import logging
 import trafilatura
 
 from ddgs import DDGS
-from langchain_core.tools import tool
 from config import settings
 
 logging.basicConfig(level=logging.INFO)
@@ -11,21 +10,17 @@ logging.basicConfig(level=logging.INFO)
 os.makedirs(settings.path_save_file, exist_ok=True)
 
 
-@tool
 def web_search(query: str) -> list[dict]:
-    """
-    Шукає інформацію в інтернеті через DuckDuckGo.
-
-    Використовуй, коли потрібно знайти актуальну інформацію на певну тему.
+    """Search the internet via DuckDuckGo.
 
     Args:
-        query: пошуковий запит
+        query: search query string
 
     Returns:
-        Список до 5 результатів, кожен містить:
-          - title (str): заголовок сторінки
-          - href (str): URL сторінки
-          - body (str): короткий опис/уривок
+        List of up to 5 results, each with:
+          - title (str): page title
+          - href (str): page URL
+          - body (str): short snippet/description
     """
     try:
         results = DDGS().text(query, max_results=settings.max_search_results)
@@ -34,19 +29,15 @@ def web_search(query: str) -> list[dict]:
         return [{"error": str(e)}]
 
 
-@tool
 def read_url(url: str) -> str:
-    """
-    Завантажує та витягує текстовий вміст веб-сторінки за URL.
-
-    Використовуй, коли потрібно отримати повний текст конкретної сторінки
-    (наприклад, після web_search для детального читання статті).
+    """Download and extract text content from a webpage.
 
     Args:
-        url: адреса сторінки
+        url: page address
 
     Returns:
-        Текст сторінки (рядок, до max_url_content_length символів)
+        Extracted page text (string, up to max_url_content_length characters),
+        or an error message string if fetching/extraction fails.
     """
     try:
         downloaded = trafilatura.fetch_url(url)
@@ -60,19 +51,15 @@ def read_url(url: str) -> str:
         return f"Error reading URL {url}: {e}"
 
 
-@tool
 def write_report(filename: str, content: str) -> str:
-    """
-    Зберігає текстовий звіт у файл.
-
-    Використовуй, коли користувач явно просить зберегти результати або звіт.
+    """Save a text report to a file.
 
     Args:
-        filename: назва файлу (наприклад 'report.md')
-        content: текст для збереження
+        filename: file name (e.g. 'report.md')
+        content: text content to save
 
     Returns:
-        Повідомлення про успіх або помилку
+        Success message with saved path, or error message string.
     """
     try:
         path = os.path.join(settings.path_save_file, filename)
@@ -81,3 +68,80 @@ def write_report(filename: str, content: str) -> str:
         return f"Report saved to {path}"
     except Exception as e:
         return f"Error writing report: {e}"
+
+
+TOOL_FUNCTIONS = {
+    "web_search": web_search,
+    "read_url": read_url,
+    "write_report": write_report,
+}
+
+TOOLS_SCHEMA = [
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": (
+                "Search the internet using DuckDuckGo. "
+                "Use when you need current information on a topic. "
+                "Returns a list of up to 5 results with title, href, and body snippet."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The search query string",
+                    }
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_url",
+            "description": (
+                "Fetch and extract the full text content of a webpage by URL. "
+                "Use after web_search when you need the complete article or page content. "
+                "Returns extracted text (up to 5000 characters) or an error string."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "The full URL of the page to read",
+                    }
+                },
+                "required": ["url"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "write_report",
+            "description": (
+                "Save research findings to a markdown file on disk. "
+                "Use ONLY when the user explicitly asks to save or export results. "
+                "Returns a success message with the file path, or an error string."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {
+                        "type": "string",
+                        "description": "File name including extension, e.g. 'report.md'",
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Full markdown text content to write to the file",
+                    },
+                },
+                "required": ["filename", "content"],
+            },
+        },
+    },
+]
