@@ -24,7 +24,12 @@ def web_search(query: str) -> list[dict]:
     """
     try:
         results = DDGS().text(query, max_results=settings.max_search_results)
-        return results or []
+        if not results:
+            return []
+        for r in results:
+            if "body" in r and len(r["body"]) > settings.max_snippet_length:
+                r["body"] = r["body"][:settings.max_snippet_length] + "…"
+        return results
     except Exception as e:
         return [{"error": str(e)}]
 
