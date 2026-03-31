@@ -1,0 +1,68 @@
+Hybrid Search RAG is a technique used in AI systems—especially chatbots and knowledge assistants—that combines different types of search methods with Retrieval-Augmented Generation (RAG) to produce more accurate and context-aware answers.
+Let’s break it down clearly:
+🧠 What is RAG (Retrieval-Augmented Generation)?
+RAG is an AI approach where a model (like a language model) doesn’t rely only on what it was trained on. Instead, it:
+Retrieves relevant information from external data (documents, databases, PDFs, etc.)
+Uses that information to generate an answer
+👉 Think of it like:
+“Look things up first, then answer.”
+🔍 What is Hybrid Search?
+Hybrid search combines two main search techniques:
+1. Keyword Search (Sparse Search)
+Matches exact words (like traditional search engines)
+Uses methods like BM25
+Good for:
+Exact phrases
+Names, IDs, technical terms
+2. Semantic Search (Dense Search)
+Uses embeddings (vector similarity)
+Finds meaning, not just exact words
+Good for:
+Paraphrases
+Conceptual similarity
+⚡ So what is Hybrid Search RAG?
+Hybrid Search RAG = RAG + both keyword AND semantic search
+Instead of relying on just one retrieval method, it:
+Searches documents using keyword matching
+Searches again using semantic similarity
+Combines the results
+Sends the best matches to the model to generate an answer
+🧩 Why use Hybrid Search RAG?
+Because each method alone has weaknesses:
+Method	Weakness
+Keyword search	Misses meaning (synonyms, paraphrases)
+Semantic search	Misses exact matches (IDs, rare terms)
+👉 Hybrid search fixes this by combining both.
+🧪 Example
+User query:
+“How do I reset my account password?”
+Hybrid retrieval:
+Keyword search finds:
+“reset password instructions”
+Semantic search finds:
+“account recovery steps”
+“forgot login credentials”
+👉 Combined → better coverage → better answer
+🏗️ Typical Architecture
+User query
+Convert query → embedding (for semantic search)
+Run:
+Keyword search (BM25)
+Vector search (embeddings)
+Merge + rank results
+Feed top documents into LLM
+Generate answer
+🚀 When is it used?
+Hybrid Search RAG is common in:
+Enterprise knowledge bases
+Customer support chatbots
+Legal / medical document search
+Internal company AI assistants
+Code/documentation assistants
+🧠 Simple Analogy
+Imagine:
+Keyword search = looking for exact words in a book index
+Semantic search = understanding the meaning of a question
+Hybrid = using both the index AND understanding
+✅ Key takeaway
+Hybrid Search RAG improves answer quality by combining exact matching with meaning-based retrieval before generation.

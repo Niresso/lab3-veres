@@ -3,9 +3,9 @@ from langgraph.prebuilt import create_react_agent
 from langgraph.checkpoint.memory import MemorySaver
 
 from config import settings, SYSTEM_PROMPT
-from tools import web_search, read_url, write_report
+from tools import web_search, read_url, write_report, knowledge_search
 
-TOOLS = [web_search, read_url, write_report]
+TOOLS = [web_search, read_url, write_report, knowledge_search]
 
 _model = ChatOpenAI(
     api_key=settings.api_key.get_secret_value(),
