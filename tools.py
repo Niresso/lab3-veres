@@ -21,6 +21,7 @@ def web_search(query: str) -> list[dict]:
           - title (str): page title
           - href (str): page URL
           - body (str): short snippet/description
+
     """
     try:
         results = DDGS().text(query, max_results=settings.max_search_results)
