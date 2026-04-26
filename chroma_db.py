@@ -12,12 +12,10 @@ def open_db() -> Chroma:
             embedding_function=emb,
             persist_directory=settings.index_dir,
         )
-        # Validate database integrity
         try:
             vectordb._collection.count()
         except Exception as e:
             print(f"Database validation failed: {e}")
-            print("Database may be corrupted. Consider rebuilding.")
         return vectordb
     except Exception as e:
         print(f"Error opening database: {e}")

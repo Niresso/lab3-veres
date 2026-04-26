@@ -1,60 +1,142 @@
 import sys
 import io
-from agent import agent
-from config import settings
+import uuid
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+from langgraph.types import Command
 
-THREAD_ID = "session-1"
+from supervisor import supervisor
 
-CONFIG = {
-    "configurable": {"thread_id": THREAD_ID},
-    "recursion_limit": settings.max_iterations * 2 + 1,
-}
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
+
+def make_config(thread_id: str) -> dict:
+    return {"configurable": {"thread_id": thread_id}}
+
+
+def stream_supervisor(input_, config: dict) -> tuple[str | None, dict | None]:
+    """
+    Stream supervisor until completion or interrupt.
+    Returns (final_answer, interrupt_data).
+    Exactly one of them is non-None.
+    """
+    final_answer = None
+    interrupt_data = None
+
+    for chunk in supervisor.stream(input_, config=config, stream_mode="updates"):
+        if "__interrupt__" in chunk:
+            interrupts = chunk["__interrupt__"]
+            interrupt_data = interrupts[0].value
+            break
+
+        if "agent" in chunk:
+            for msg in chunk["agent"]["messages"]:
+                if hasattr(msg, "tool_calls") and msg.tool_calls:
+                    for tc in msg.tool_calls:
+                        args_str = str(tc["args"])[:100]
+                        print(f"  -> {tc['name']}({args_str})")
+                elif getattr(msg, "content", None):
+                    final_answer = msg.content
+
+        if "tools" in chunk:
+            for msg in chunk["tools"]["messages"]:
+                preview = str(msg.content)[:120].replace("\n", " ")
+                print(f"  <- {msg.name}: {preview}...")
+
+    return final_answer, interrupt_data
+
+
+def show_interrupt(interrupt_data: dict) -> None:
+    action_requests = interrupt_data.get("action_requests", [])
+    if not action_requests:
+        print("\n[HITL] save_report requires approval.")
+        return
+
+    req = action_requests[0]
+    content = req.get("args", {}).get("content", "")
+    preview = content[:600].replace("\n", "\n    ")
+    print(f"preview: {preview}")
+
+def handle_hitl(interrupt_data: dict, config: dict) -> str | None:
+    """
+    Ask user to approve / edit / reject and resume supervisor.
+    Returns final answer or None.
+    """
+    show_interrupt(interrupt_data)
+
+    while True:
+        print("\nOptions: [approve] / [edit <your feedback>] / [reject]")
+        try:
+            raw = input("Decision: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            raw = "reject"
+
+        if raw.lower() == "approve":
+            resume = {"decisions": [{"type": "approve"}]}
+            final, next_interrupt = stream_supervisor(Command(resume=resume), config)
+            if next_interrupt:
+                return handle_hitl(next_interrupt, config)
+            return final
+
+        elif raw.lower().startswith("edit"):
+            feedback = raw[4:].strip()
+            if not feedback:
+                print("  Please provide feedback after 'edit', e.g.: edit add more examples")
+                continue
+            resume = {
+                "decisions": [
+                    {"type": "reject", "message": f"User requested changes: {feedback}"}
+                ]
+            }
+            print("  Sending feedback to Supervisor for revision...")
+            final, next_interrupt = stream_supervisor(Command(resume=resume), config)
+            if next_interrupt:
+                return handle_hitl(next_interrupt, config)
+            return final
+
+        elif raw.lower().startswith("reject"):
+            reason = raw[6:].strip() or "User rejected the report."
+            resume = {"decisions": [{"type": "reject", "message": reason}]}
+            print("  Rejected — cancelling save.")
+            final, next_interrupt = stream_supervisor(Command(resume=resume), config)
+            if next_interrupt:
+                return handle_hitl(next_interrupt, config)
+            return final
+
+        else:
+            print("  Unknown option. Type 'approve', 'edit <feedback>', or 'reject'.")
 
 
 def main():
-    print("Research Agent (type 'exit' to quit)")
-    print("-" * 40)
+    print("Multi-Agent Research System")
+
+    thread_id = str(uuid.uuid4())
+    config = make_config(thread_id)
 
     while True:
         try:
             user_input = input("\nYou: ").strip()
         except (EOFError, KeyboardInterrupt):
-            print("\nGoodbye!")
             break
 
         if not user_input:
             continue
         if user_input.lower() in ("exit", "quit"):
-            print("Goodbye!")
             break
 
+        thread_id = str(uuid.uuid4())
+        config = make_config(thread_id)
+
         try:
-            final_answer = None
+            final, interrupt_data = stream_supervisor(
+                {"messages": [("user", user_input)]}, config
+            )
 
-            for chunk in agent.stream(
-                {"messages": [("user", user_input)]},
-                config=CONFIG,
-                stream_mode="updates",
-            ):
-                if "agent" in chunk:
-                    for msg in chunk["agent"]["messages"]:
-                        if hasattr(msg, "tool_calls") and msg.tool_calls:
-                            for tc in msg.tool_calls:
-                                args_str = str(tc["args"])[:80]
-                                print(f"  -> {tc['name']}({args_str})")
-                        elif getattr(msg, "content", None):
-                            final_answer = msg.content
+            if interrupt_data:
+                final = handle_hitl(interrupt_data, config)
 
-                if "tools" in chunk:
-                    for msg in chunk["tools"]["messages"]:
-                        preview = str(msg.content)[:120].replace("\n", " ")
-                        print(f"  <- {msg.name}: {preview}...")
-
-            if final_answer:
-                print(f"\nAgent: {final_answer}")
+            if final:
+                print(f"\nAgent: {final}")
 
         except Exception as e:
             print(f"\nError: {e}")
