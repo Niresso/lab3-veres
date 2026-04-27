@@ -9,9 +9,9 @@ import asyncio
 from langchain.agents import create_agent
 from langchain.agents.middleware import HumanInTheLoopMiddleware
 from langchain_core.tools import tool
-from langchain_mcp_adapters.tools import load_mcp_tools
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
+from acp_sdk import Message, MessagePart
 from acp_sdk.client import Client as ACPClient
 from fastmcp import Client as MCPClient
 
@@ -24,8 +24,30 @@ REPORT_MCP_URL = f"http://localhost:{settings.report_mcp_port}/mcp"
 # ── ACP helper ────────────────────────────────────────────────────────────────
 
 async def _call_acp_agent(agent_name: str, message: str) -> str:
-    async with ACPClient(base_url=ACP_BASE_URL) as client:
-        run = await client.run_sync(input=message, agent=agent_name)
+    async with ACPClient(
+        base_url=ACP_BASE_URL,
+        headers={"Content-Type": "application/json"},
+    ) as client:
+        run = await client.run_sync(
+            agent=agent_name,
+            input=[
+                Message(
+                    role="user",
+                    parts=[MessagePart(content=message)],
+                )
+            ],
+        )
+
+        if getattr(run, "error", None):
+            error = run.error
+            code = getattr(error, "code", None)
+            message = getattr(error, "message", None)
+            details = getattr(error, "details", None)
+            raise RuntimeError(
+                f"ACP agent '{agent_name}' failed: "
+                f"code={code}, message={message}, details={details}"
+            )
+
         run.raise_for_status()
         for msg in run.output:
             for part in msg.parts:
@@ -72,15 +94,29 @@ def delegate_to_critic(findings: str) -> str:
     return asyncio.run(_call_acp_agent("critic", findings))
 
 
-# ── ReportMCP save_report tool ────────────────────────────────────────────────
+# ── ReportMCP save_report tool (sync wrapper — avoids async-only StructuredTool) ──
 
-async def _load_report_tool():
+async def _call_report_mcp(filename: str, content: str) -> str:
     async with MCPClient(REPORT_MCP_URL) as client:
-        tools = await load_mcp_tools(session=client.session)
-        return next(t for t in tools if t.name == "save_report")
+        result = await client.call_tool("save_report", {"filename": filename, "content": content})
+        # result is a list of content items
+        parts = getattr(result, "content", result)
+        if parts:
+            first = parts[0]
+            return getattr(first, "text", str(first))
+        return "Report saved."
 
 
-save_report = asyncio.run(_load_report_tool())
+@tool
+def save_report(filename: str, content: str) -> str:
+    """
+    Save the final research report to a file via ReportMCP. Requires user approval (HITL).
+
+    Args:
+        filename: file name, e.g. 'report.md'
+        content: full report text in markdown
+    """
+    return asyncio.run(_call_report_mcp(filename, content))
 
 
 # ── Supervisor ────────────────────────────────────────────────────────────────

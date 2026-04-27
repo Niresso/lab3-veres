@@ -115,4 +115,9 @@ def knowledge_base_stats() -> dict:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http", host="0.0.0.0", port=settings.search_mcp_port)
+    mcp.run(
+        transport="streamable-http",
+        host="0.0.0.0",
+        port=settings.search_mcp_port,
+        uvicorn_config={"ws": "none"},
+    )

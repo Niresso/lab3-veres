@@ -57,3 +57,5 @@ Decision: approve
 - `approve` — зберегти звіт як є
 - `edit додай висновки` — Supervisor переробляє і питає знову
 - `reject` — скасувати збереження
+
+pip install --upgrade uvicorn websockets

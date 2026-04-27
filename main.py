@@ -1,6 +1,7 @@
 import sys
 import io
 import uuid
+import traceback
 
 from langgraph.types import Command
 
@@ -31,15 +32,17 @@ def stream_supervisor(input_, config: dict) -> tuple[str | None, dict | None]:
             for msg in chunk["agent"]["messages"]:
                 if hasattr(msg, "tool_calls") and msg.tool_calls:
                     for tc in msg.tool_calls:
-                        args_str = str(tc["args"])[:100]
-                        print(f"  -> {tc['name']}({args_str})")
+                        args_str = str(tc["args"])[:120]
+                        print(f"  >> {tc['name']}({args_str})", flush=True)
                 elif getattr(msg, "content", None):
                     final_answer = msg.content
 
         if "tools" in chunk:
             for msg in chunk["tools"]["messages"]:
-                preview = str(msg.content)[:120].replace("\n", " ")
-                print(f"  <- {msg.name}: {preview}...")
+                content = str(msg.content)
+                preview = content[:200].replace("\n", " ")
+                status = "ERROR" if content.startswith("ERROR") else "ok"
+                print(f"  << {msg.name} [{status}]: {preview}...", flush=True)
 
     return final_answer, interrupt_data
 
@@ -145,7 +148,9 @@ def main():
                 print(f"\nAgent: {final}")
 
         except Exception as e:
-            print(f"\nError: {e}")
+            print(f"\nError type: {type(e).__name__}")
+            print(f"Error repr: {e!r}")
+            traceback.print_exc()
 
 
 if __name__ == "__main__":

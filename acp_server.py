@@ -3,7 +3,7 @@ ACP Server — port 8903
 Agents: planner, researcher, critic
 Each agent connects to SearchMCP (port 8901) to get its tools.
 """
-import asyncio
+import traceback
 
 from acp_sdk import Message, MessagePart
 from acp_sdk.server import Context, Server
@@ -27,15 +27,6 @@ def _make_model() -> ChatOpenAI:
     )
 
 
-async def _get_search_tools(names: list[str] | None = None):
-    """Connect to SearchMCP and return tools as LangChain tools."""
-    async with MCPClient(SEARCH_MCP_URL) as client:
-        tools = await load_mcp_tools(session=client.session)
-        if names:
-            tools = [t for t in tools if t.name in names]
-        return tools
-
-
 def _last_text(messages: list[Message]) -> str:
     for msg in reversed(messages):
         for part in msg.parts:
@@ -44,71 +35,79 @@ def _last_text(messages: list[Message]) -> str:
     return ""
 
 
-# ── Planner ────────────────────────────────────────────────────────────────────
+# ── Planner ───────────────────────────────────────────────────────────────────
 
 @server.agent(name="planner", description="Decomposes a user request into a structured ResearchPlan")
 async def planner_agent(input: list[Message], context: Context):
-    tools = await _get_search_tools(["web_search", "knowledge_search"])
+    try:
+        # Keep MCPClient open for the entire agent invocation
+        async with MCPClient(SEARCH_MCP_URL) as client:
+            tools = await load_mcp_tools(session=client.session)
+            tools = [t for t in tools if t.name in ("web_search", "knowledge_search")]
 
-    agent = create_agent(
-        model=_make_model(),
-        tools=tools,
-        system_prompt=PLANNER_PROMPT,
-        response_format=ResearchPlan,
-    )
+            agent = create_agent(
+                model=_make_model(),
+                tools=tools,
+                system_prompt=PLANNER_PROMPT,
+                response_format=ResearchPlan,
+            )
+            user_text = _last_text(input)
+            result = await agent.ainvoke({"messages": [("user", user_text)]})
 
-    user_text = _last_text(input)
-    result = agent.invoke({"messages": [("user", user_text)]})
-
-    structured: ResearchPlan | None = result.get("structured_response")
-    if structured is not None:
-        output = structured.model_dump_json(indent=2)
-    else:
-        output = result["messages"][-1].content
+        structured: ResearchPlan | None = result.get("structured_response")
+        output = structured.model_dump_json(indent=2) if structured else result["messages"][-1].content
+    except Exception as e:
+        output = f"ERROR in planner: {type(e).__name__}: {e}\n{traceback.format_exc()}"
 
     yield Message(role="agent", parts=[MessagePart(content=output)])
 
 
-# ── Researcher ─────────────────────────────────────────────────────────────────
+# ── Researcher ────────────────────────────────────────────────────────────────
 
 @server.agent(name="researcher", description="Executes research according to the plan")
 async def researcher_agent(input: list[Message], context: Context):
-    tools = await _get_search_tools(["web_search", "read_url", "knowledge_search"])
+    try:
+        async with MCPClient(SEARCH_MCP_URL) as client:
+            tools = await load_mcp_tools(session=client.session)
+            tools = [t for t in tools if t.name in ("web_search", "read_url", "knowledge_search")]
 
-    agent = create_agent(
-        model=_make_model(),
-        tools=tools,
-        system_prompt=RESEARCH_PROMPT,
-    )
+            agent = create_agent(
+                model=_make_model(),
+                tools=tools,
+                system_prompt=RESEARCH_PROMPT,
+            )
+            user_text = _last_text(input)
+            result = await agent.ainvoke({"messages": [("user", user_text)]})
 
-    user_text = _last_text(input)
-    result = agent.invoke({"messages": [("user", user_text)]})
-    output = result["messages"][-1].content
+        output = result["messages"][-1].content
+    except Exception as e:
+        output = f"ERROR in researcher: {type(e).__name__}: {e}\n{traceback.format_exc()}"
 
     yield Message(role="agent", parts=[MessagePart(content=output)])
 
 
-# ── Critic ─────────────────────────────────────────────────────────────────────
+# ── Critic ────────────────────────────────────────────────────────────────────
 
 @server.agent(name="critic", description="Evaluates research quality and returns a CritiqueResult")
 async def critic_agent(input: list[Message], context: Context):
-    tools = await _get_search_tools(["web_search", "read_url", "knowledge_search"])
+    try:
+        async with MCPClient(SEARCH_MCP_URL) as client:
+            tools = await load_mcp_tools(session=client.session)
+            tools = [t for t in tools if t.name in ("web_search", "read_url", "knowledge_search")]
 
-    agent = create_agent(
-        model=_make_model(),
-        tools=tools,
-        system_prompt=CRITIC_PROMPT,
-        response_format=CritiqueResult,
-    )
+            agent = create_agent(
+                model=_make_model(),
+                tools=tools,
+                system_prompt=CRITIC_PROMPT,
+                response_format=CritiqueResult,
+            )
+            user_text = _last_text(input)
+            result = await agent.ainvoke({"messages": [("user", user_text)]})
 
-    user_text = _last_text(input)
-    result = agent.invoke({"messages": [("user", user_text)]})
-
-    structured: CritiqueResult | None = result.get("structured_response")
-    if structured is not None:
-        output = structured.model_dump_json(indent=2)
-    else:
-        output = result["messages"][-1].content
+        structured: CritiqueResult | None = result.get("structured_response")
+        output = structured.model_dump_json(indent=2) if structured else result["messages"][-1].content
+    except Exception as e:
+        output = f"ERROR in critic: {type(e).__name__}: {e}\n{traceback.format_exc()}"
 
     yield Message(role="agent", parts=[MessagePart(content=output)])
 
