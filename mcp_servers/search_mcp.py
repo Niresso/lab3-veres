@@ -1,10 +1,17 @@
+"""
+SearchMCP — port 8901
+Tools: web_search, read_url, knowledge_search
+Resources: knowledge-base-stats
+"""
 import os
 import pickle
-import logging
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import trafilatura
 from ddgs import DDGS
-from langchain_core.tools import tool
+from fastmcp import FastMCP
 from langchain_classic.retrievers import EnsembleRetriever, ContextualCompressionRetriever
 from langchain_classic.retrievers.document_compressors import CrossEncoderReranker
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
@@ -12,23 +19,19 @@ from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from config import settings
 from chroma_db import open_db
 
-logging.basicConfig(level=logging.INFO)
-
-os.makedirs(settings.path_save_file, exist_ok=True)
+mcp = FastMCP(name="SearchMCP")
 
 
-@tool
+@mcp.tool
 def web_search(query: str) -> list[dict]:
     """
     Search the internet using DuckDuckGo.
-
-    Use when you need up-to-date information on a topic.
 
     Args:
         query: search query string
 
     Returns:
-        List of up to 5 results, each containing: title, href, body
+        List of up to 5 results: title, href, body
     """
     try:
         results = DDGS().text(query, max_results=settings.max_search_results)
@@ -37,12 +40,10 @@ def web_search(query: str) -> list[dict]:
         return [{"error": str(e)}]
 
 
-@tool
+@mcp.tool
 def read_url(url: str) -> str:
     """
     Fetch and extract the text content of a webpage.
-
-    Use after web_search to read the full content of a promising link.
 
     Args:
         url: page URL
@@ -62,18 +63,16 @@ def read_url(url: str) -> str:
         return f"Error reading URL {url}: {e}"
 
 
-@tool
+@mcp.tool
 def knowledge_search(query: str) -> list[dict]:
     """
-    Search the local knowledge base (ingested PDF/TXT documents).
-
-    Uses hybrid search (BM25 + vector) with cross-encoder reranking.
+    Search the local knowledge base using hybrid BM25 + vector search with reranking.
 
     Args:
         query: search query string
 
     Returns:
-        List of the most relevant document chunks, each containing: content, metadata
+        List of relevant document chunks: content, metadata
     """
     try:
         reranker_model = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-base")
@@ -85,37 +84,35 @@ def knowledge_search(query: str) -> list[dict]:
         with open(bm25_path, "rb") as f:
             bm25_retriever = pickle.load(f)
 
-        ensemble_retriever = EnsembleRetriever(
+        ensemble = EnsembleRetriever(
             retrievers=[bm25_retriever, vector_retriever],
             weights=[0.3, 0.7],
         )
-        reranking_retriever = ContextualCompressionRetriever(
+        retriever = ContextualCompressionRetriever(
             base_compressor=compressor,
-            base_retriever=ensemble_retriever,
+            base_retriever=ensemble,
         )
-        results = reranking_retriever.invoke(query)
-        return [{"content": doc.page_content, "metadata": doc.metadata} for doc in results]
+        docs = retriever.invoke(query)
+        return [{"content": d.page_content, "metadata": d.metadata} for d in docs]
     except Exception as e:
         return [{"error": str(e)}]
 
 
-@tool
-def save_report(filename: str, content: str) -> str:
-    """
-    Save the final research report to a file. Requires user approval (HITL).
-
-    Args:
-        filename: file name, e.g. 'report.md'
-        content: full report text in markdown
-
-    Returns:
-        Success message or error description
-    """
+@mcp.resource("resource://knowledge-base-stats")
+def knowledge_base_stats() -> dict:
+    """Returns document count and last update time of the knowledge base index."""
     try:
-        path = os.path.join(settings.path_save_file, filename)
-        content_clean = content.encode("utf-8", errors="replace").decode("utf-8")
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(content_clean)
-        return f"Report saved to {path}"
+        bm25_path = os.path.join(settings.index_dir, "bm25_retriever.pkl")
+        mtime = os.path.getmtime(bm25_path)
+        import datetime
+        last_updated = datetime.datetime.fromtimestamp(mtime).isoformat()
+        with open(bm25_path, "rb") as f:
+            bm25 = pickle.load(f)
+        doc_count = len(bm25.docs) if hasattr(bm25, "docs") else "unknown"
+        return {"document_chunks": doc_count, "last_updated": last_updated}
     except Exception as e:
-        return f"Error writing report: {e}"
+        return {"error": str(e)}
+
+
+if __name__ == "__main__":
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=settings.search_mcp_port)

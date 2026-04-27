@@ -16,17 +16,15 @@ def make_config(thread_id: str) -> dict:
 
 def stream_supervisor(input_, config: dict) -> tuple[str | None, dict | None]:
     """
-    Stream supervisor until completion or interrupt.
-    Returns (final_answer, interrupt_data).
-    Exactly one of them is non-None.
+    Stream supervisor until completion or HITL interrupt.
+    Returns (final_answer, interrupt_data) — exactly one is non-None.
     """
     final_answer = None
     interrupt_data = None
 
     for chunk in supervisor.stream(input_, config=config, stream_mode="updates"):
         if "__interrupt__" in chunk:
-            interrupts = chunk["__interrupt__"]
-            interrupt_data = interrupts[0].value
+            interrupt_data = chunk["__interrupt__"][0].value
             break
 
         if "agent" in chunk:
@@ -53,15 +51,20 @@ def show_interrupt(interrupt_data: dict) -> None:
         return
 
     req = action_requests[0]
+    filename = req.get("args", {}).get("filename", "report.md")
     content = req.get("args", {}).get("content", "")
     preview = content[:600].replace("\n", "\n    ")
-    print(f"preview: {preview}")
+
+    print("\n" + "=" * 60)
+    print(f"[HITL] Supervisor wants to save: {filename}")
+    print("-" * 60)
+    print(f"    {preview}")
+    if len(content) > 600:
+        print(f"    ... ({len(content)} chars total)")
+    print("=" * 60)
+
 
 def handle_hitl(interrupt_data: dict, config: dict) -> str | None:
-    """
-    Ask user to approve / edit / reject and resume supervisor.
-    Returns final answer or None.
-    """
     show_interrupt(interrupt_data)
 
     while True:
@@ -73,6 +76,7 @@ def handle_hitl(interrupt_data: dict, config: dict) -> str | None:
 
         if raw.lower() == "approve":
             resume = {"decisions": [{"type": "approve"}]}
+            print("  Approved — saving report...")
             final, next_interrupt = stream_supervisor(Command(resume=resume), config)
             if next_interrupt:
                 return handle_hitl(next_interrupt, config)
@@ -81,7 +85,7 @@ def handle_hitl(interrupt_data: dict, config: dict) -> str | None:
         elif raw.lower().startswith("edit"):
             feedback = raw[4:].strip()
             if not feedback:
-                print("  Please provide feedback after 'edit', e.g.: edit add more examples")
+                print("  Provide feedback after 'edit', e.g.: edit add more examples")
                 continue
             resume = {
                 "decisions": [
@@ -108,20 +112,22 @@ def handle_hitl(interrupt_data: dict, config: dict) -> str | None:
 
 
 def main():
-    print("Multi-Agent Research System")
-
-    thread_id = str(uuid.uuid4())
-    config = make_config(thread_id)
+    print("Multi-Agent Research System (hw9)")
+    print("Supervisor → ACP(Planner/Researcher/Critic) → MCP(Search/Report)")
+    print("Type 'exit' to quit.")
+    print("-" * 60)
 
     while True:
         try:
             user_input = input("\nYou: ").strip()
         except (EOFError, KeyboardInterrupt):
+            print("\nGoodbye!")
             break
 
         if not user_input:
             continue
         if user_input.lower() in ("exit", "quit"):
+            print("Goodbye!")
             break
 
         thread_id = str(uuid.uuid4())

@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     max_iterations: int = 10
     max_revision_rounds: int = 2
 
+    search_mcp_port: int = 8901
+    report_mcp_port: int = 8902
+    acp_port: int = 8903
+
     model_config = {"env_file": ".env"}
 
 
@@ -105,40 +109,40 @@ Return a single structured CritiqueResult — no extra prose.
 # ── Supervisor ────────────────────────────────────────────────────────────────
 
 SUPERVISOR_PROMPT = f"""You are a Research Supervisor. You orchestrate a team of
-specialised sub-agents to produce high-quality research reports.
+specialised sub-agents (via ACP protocol) to produce high-quality research reports.
 
-Today's date: April 21 2026.
+Today's date: April 27 2026.
 
 Your tools:
-- plan(request)                  → Planner Agent  → structured ResearchPlan (JSON)
-- research(request)              → Research Agent → markdown research findings
-- critique(findings)             → Critic Agent   → structured CritiqueResult (JSON)
-- save_report(filename, content) → saves the final report (requires user approval)
+- delegate_to_planner(request)       → Planner Agent  → structured ResearchPlan (JSON)
+- delegate_to_researcher(request)    → Research Agent → markdown research findings
+- delegate_to_critic(findings)       → Critic Agent   → structured CritiqueResult (JSON)
+- save_report(filename, content)     → saves the final report (requires user approval)
 
 Workflow — follow this ORDER strictly:
 
 STEP 1 — PLAN
-  Call plan(request) with the full user request.
+  Call delegate_to_planner(request) with the full user request.
   Study the returned ResearchPlan carefully.
 
 STEP 2 — RESEARCH
-  Call research(request) where request combines the ResearchPlan JSON
+  Call delegate_to_researcher(request) where request combines the ResearchPlan JSON
   and the original user question so the agent has full context.
 
 STEP 3 — CRITIQUE
-  Call critique(findings) with the full markdown findings from step 2.
+  Call delegate_to_critic(findings) with the full markdown findings from step 2.
   Parse the CritiqueResult JSON.
 
 STEP 4 — ITERATE (max {settings.max_revision_rounds} rounds)
   If verdict == "REVISE":
-    Prepend the revision_requests to the next research call so the researcher
-    knows exactly what to fix. Then call critique again on the new findings.
+    Prepend the revision_requests to the next delegate_to_researcher call so the
+    researcher knows exactly what to fix. Then call delegate_to_critic again.
     Repeat at most {settings.max_revision_rounds} times total.
   If verdict == "APPROVE" (or max rounds reached): proceed to step 5.
 
 STEP 5 — WRITE & SAVE REPORT
   Compose the final polished markdown report from the approved findings.
-  Include: title, date (April 21 2026), executive summary, main sections
+  Include: title, date (April 27 2026), executive summary, main sections
   with citations, and a conclusion.
   Call save_report(filename="<topic>_report.md", content=<full markdown>).
 

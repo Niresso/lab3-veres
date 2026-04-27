@@ -9,7 +9,11 @@ langchain-classic
 langchain-community
 langchain-chroma
 langchain-huggingface
+langchain-mcp-adapters
 langgraph >= 1.0.0
+fastmcp >= 3.0.0
+acp-sdk >= 1.0.0
+uvicorn==0.34.3
 rank_bm25
 pypdf
 sentence-transformers
