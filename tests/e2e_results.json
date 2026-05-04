@@ -106,5 +106,32 @@
     "answer_relevancy_score": null,
     "answer_relevancy_passed": false,
     "elapsed_seconds": 15.6
+  },
+  {
+    "input": "Compare naive RAG vs sentence-window retrieval",
+    "category": "happy_path_critique",
+    "verdict": "REVISE",
+    "is_fresh": false,
+    "is_complete": true,
+    "is_well_structured": true,
+    "gaps": [
+      "Information on the latest advancements in RAG techniques is outdated; newer methods and architectural changes in 2026 weren't fully reflected in the findings.",
+      "Critical challenges facing Naive RAG have evolved significantly since its original conception; recent articles highlight that it often fails at retrieval in production environments, which should be discussed."
+    ],
+    "revision_requests": [
+      "Update the report to include major advancements in RAG techniques as of 2026, particularly around hybrid and agentic models.",
+      "Incorporate information on specific failure modes of Naive RAG in production, emphasizing retrieval issues relative to recent literature.",
+      "Ensure all references are from 2026 to maintain freshness and accuracy."
+    ]
+  },
+  {
+    "input": "What are best practices for chunking documents in RAG systems?",
+    "category": "happy_path_critique",
+    "verdict": "APPROVE",
+    "is_fresh": true,
+    "is_complete": true,
+    "is_well_structured": true,
+    "gaps": [],
+    "revision_requests": []
   }
 ]

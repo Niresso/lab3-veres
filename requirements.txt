@@ -15,3 +15,4 @@ pypdf
 sentence-transformers
 llama-index-core
 deepeval >= 3.0.0
+langfuse >= 3.0.0

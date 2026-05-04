@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip show *)",
+      "Bash(python3 -c \"from langgraph.prebuilt import create_react_agent; help\\(create_react_agent\\)\")",
+      "Bash(python3 -c \"from langchain.agents import create_agent; help\\(create_agent\\)\")",
+      "Bash(python3 -c \"from langchain.agents.middleware import HumanInTheLoopMiddleware; help\\(HumanInTheLoopMiddleware\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 *)",
+      "Bash(pip install *)",
+      "Bash(.venv/bin/pip show *)",
+      "Bash(.venv/bin/pip install *)",
+      "Bash(.venv/bin/python *)"
+    ]
+  }
+}
