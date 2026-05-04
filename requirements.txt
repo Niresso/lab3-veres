@@ -14,3 +14,4 @@ rank_bm25
 pypdf
 sentence-transformers
 llama-index-core
+deepeval >= 3.0.0

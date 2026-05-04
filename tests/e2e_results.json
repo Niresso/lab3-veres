@@ -1,0 +1,110 @@
+[
+  {
+    "input": "Compare naive RAG vs sentence-window retrieval",
+    "category": "happy_path",
+    "actual_output": "# Comparative Analysis of Naive RAG and Sentence-Window Retrieval\n\n## Executive Summary\nRetrieval-augmented generation (RAG) has emerged as a vital technique in the architecture of large language models (LLMs), enhancing their ability to retrieve pertinent information and provide context-rich responses. This report elucidates the mechanics and effectiveness of naive RAG in comparison to the more sophisticated sentence-window retrieval method. By examining their definitions, advantages, benchmark",
+    "answer_relevancy_score": null,
+    "answer_relevancy_passed": false,
+    "elapsed_seconds": 17.2
+  },
+  {
+    "input": "What are best practices for chunking documents in RAG systems?",
+    "category": "happy_path",
+    "actual_output": "# Executive Summary\n\nThis report synthesizes insights on best practices for chunking documents in Retrieval-Augmented Generation (RAG) systems. The effectiveness of RAG systems is significantly influenced by how documents are chunked for efficient retrieval and subsequent content generation. Key strategies include selecting appropriate chunk sizes, leveraging metadata, and engaging advanced chunking methods. This report is structured into three main sections: Chunking Strategies, Impact of Chunk",
+    "answer_relevancy_score": null,
+    "answer_relevancy_passed": false,
+    "elapsed_seconds": 20.4
+  },
+  {
+    "input": "How does hybrid search (BM25 + vector) improve retrieval quality?",
+    "category": "happy_path",
+    "actual_output": "# Analysis of Hybrid Search (BM25 + Vector) and Its Impact on Retrieval Quality\n\n## Executive Summary\nHybrid search combines traditional keyword (BM25) and semantic (vector) search techniques to enhance the accuracy and relevance of information retrieval. By leveraging both keyword matching for exact terms and vector embeddings for conceptual understanding, hybrid search addresses the limitations of each method individually. This report delves into the workings, advantages, and impact of hybrid ",
+    "answer_relevancy_score": null,
+    "answer_relevancy_passed": false,
+    "elapsed_seconds": 14.7
+  },
+  {
+    "input": "Compare naive RAG vs sentence-window retrieval",
+    "category": "happy_path",
+    "actual_output": "# Comparison of Naive RAG vs Sentence-Window Retrieval Techniques\n\n## Executive Summary\nRetrieval-augmented generation (RAG) techniques enhance the functionality of language models by integrating information retrieval from external sources. Two prominent methods of RAG are Naive RAG and Sentence-Window Retrieval. Naive RAG simply focuses on indexing, retrieval, and the generation of responses using large text chunks, while Sentence-Window Retrieval optimizes the embedding and retrieval processes",
+    "answer_relevancy_score": null,
+    "answer_relevancy_passed": false,
+    "elapsed_seconds": 17.8
+  },
+  {
+    "input": "What embedding models work best for scientific document retrieval?",
+    "category": "happy_path",
+    "actual_output": "# Research Report: Best Embedding Models for Scientific Document Retrieval\n\n## Executive Summary\nThis report synthesizes findings from various sources regarding the best embedding models for retrieving scientific documents. It focuses on the effectiveness and advancements in embedding techniques specifically tailored for academic contexts. The results indicate that large language models (LLMs) optimized for specific tasks, such as Retrieval-Augmented Generation (RAG), have emerged as highly effe",
+    "answer_relevancy_score": null,
+    "answer_relevancy_passed": false,
+    "elapsed_seconds": 21.3
+  },
+  {
+    "input": "What are best practices for chunking documents in RAG systems?",
+    "category": "happy_path",
+    "actual_output": "# Best Practices for Chunking Documents in Retrieval-Augmented Generation (RAG) Systems\n\n## Executive Summary\nThis report highlights the best practices for chunking documents in Retrieval-Augmented Generation (RAG) systems. Document chunking plays a crucial role in enhancing retrieval accuracy and improving response generation by large language models (LLMs). Effective chunking strategies can help create coherent contexts for queries and ensure that essential information is retained across chunk",
+    "answer_relevancy_score": null,
+    "answer_relevancy_passed": false,
+    "elapsed_seconds": 19.0
+  },
+  {
+    "input": "Explain the role of cross-encoder reranking in RAG pipelines",
+    "category": "happy_path",
+    "actual_output": "# The Role of Cross-Encoder Reranking in Retrieval-Augmented Generation (RAG) Pipelines\n\n## Executive Summary\nRetrieval-Augmented Generation (RAG) combines generative models with retrieval mechanisms to provide more accurate and contextually relevant responses. A crucial aspect of enhancing this process is the implementation of cross-encoder reranking techniques. Cross-encoders significantly improve retrieval precision and response relevance by re-evaluating the documents retrieved in the initia",
+    "answer_relevancy_score": null,
+    "answer_relevancy_passed": false,
+    "elapsed_seconds": 18.0
+  },
+  {
+    "input": "Compare naive RAG vs sentence-window retrieval",
+    "category": "happy_path_critique",
+    "verdict": "REVISE",
+    "is_fresh": false,
+    "is_complete": false,
+    "is_well_structured": true,
+    "gaps": [
+      "Findings are based on sources from 2023 and early 2026, lacking the latest research and advancements in Retrieval-Augmented Generation as of April 2026.",
+      "Does not address the dramatic shift in RAG methodologies that have evolved in 2026, such as hybrid search techniques and multi-modal capabilities.",
+      "Missing recent case studies or specific examples that illustrate the current usage of RAG in enterprise settings."
+    ],
+    "revision_requests": [
+      "Incorporate the latest information and developments in RAG techniques as of April 2026.",
+      "Add references to recent announcements or advancements highlighting hybrid RAG systems and their applications in enterprise AI.",
+      "Enhance the report with specific current examples or case studies demonstrating both Naive RAG and Sentence-Window Retrieval in practical settings."
+    ]
+  },
+  {
+    "input": "What are best practices for chunking documents in RAG systems?",
+    "category": "happy_path_critique",
+    "verdict": "REVISE",
+    "is_fresh": false,
+    "is_complete": true,
+    "is_well_structured": true,
+    "gaps": [
+      "The citation of sources is inadequate; no clear indication of when the cited documents were published or updated, leading to potential issues with freshness.",
+      "Recent findings from 2026 indicate that recursive character splitting with overlap is a new benchmark for chunking, which was not mentioned.",
+      "The report lacks consideration of newer chunking techniques and metrics as highlighted in 2026 resources."
+    ],
+    "revision_requests": [
+      "Update the references with more current studies and findings from 2026, especially around optimal chunking strategies.",
+      "Incorporate more recent metrics and best practices that emerged after October 2023, focusing on benchmarks and evaluations from new sources.",
+      "Enhance the citations by clearly indicating the publication dates of the sources referenced within the report."
+    ]
+  },
+  {
+    "input": "What embedding models work best for scientific document retrieval?",
+    "category": "happy_path",
+    "actual_output": "# Research Findings on Embedding Models for Scientific Document Retrieval\n\n## Executive Summary\nThis report synthesizes findings on the effectiveness of various embedding models used for scientific document retrieval. Notable advancements have been observed in models designed specifically for the scientific domain. The Retrieval-Augmented Generation (RAG) approach also demonstrates significant utility by leveraging embeddings to enhance document retrieval. SPECTER2, among the latest models, has ",
+    "answer_relevancy_score": null,
+    "answer_relevancy_passed": false,
+    "elapsed_seconds": 18.5
+  },
+  {
+    "input": "Explain the role of cross-encoder reranking in RAG pipelines",
+    "category": "happy_path",
+    "actual_output": "# Research Report on Cross-Encoder Reranking in RAG Pipelines\n\n## Executive Summary\nThis report delves into the role of cross-encoder reranking in Retrieval-Augmented Generation (RAG) pipelines, emphasizing its significance in enhancing retrieval accuracy and the quality of generated responses. Cross-encoders are employed to reevaluate initially retrieved documents based on complex scoring mechanisms that offer more nuanced understanding, which results in improved relevance and contextuality of ",
+    "answer_relevancy_score": null,
+    "answer_relevancy_passed": false,
+    "elapsed_seconds": 15.6
+  }
+]
